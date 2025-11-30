@@ -3,69 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatRoom Satuan | Telegram Style</title>
+    <title>Room Chat Emas Hijau</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
     <style>
-        /* CSS untuk Tampilan Rapi dan Tema Hijau-Emas */
+        /* Palet Warna: Hijau Emerald & Emas */
         :root {
-            --color-primary: #1C8057; /* Hijau Utama (Dasar Telegram/WhatsApp) */
+            --color-primary: #00897b; /* Hijau Emerald */
             --color-secondary: #FFD700; /* Emas */
-            --color-background: #EAEAEA;
-            --color-chat-bg: #FFFFFF;
-            --color-text: #2C3E50;
-            --color-my-bubble: #DCF8C6; /* Hijau muda untuk pesan saya */
-            --color-other-bubble: #F7F7F7; /* Abu muda untuk pesan lain */
+            --color-bg: #f5f5f5;
+            --color-chat-bg: #fff;
+            --color-sent-bg: #00897b;
+            --color-received-bg: #e0e0e0;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--color-background);
             margin: 0;
+            padding: 0;
+            background-color: var(--color-bg);
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh;
         }
 
-        .container {
-            width: 100%;
-            max-width: 900px;
-            height: 95vh;
-            background-color: var(--color-chat-bg);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-radius: 15px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* --- UI Login/Register --- */
-        .auth-screen {
+        /* Tampilan Login/Daftar */
+        #auth-container {
             padding: 30px;
+            background-color: var(--color-chat-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 90%;
             text-align: center;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
         }
 
-        .auth-screen h2 {
+        #auth-container h2 {
             color: var(--color-primary);
-            margin-bottom: 25px;
-            border-bottom: 3px solid var(--color-secondary);
-            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
 
-        .auth-screen input, .auth-screen button {
+        #auth-container input, #auth-container button {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
             border: 1px solid #ccc;
-            border-radius: 6px;
             box-sizing: border-box;
-            font-size: 16px;
         }
 
-        .auth-screen button {
+        #auth-container button {
             background-color: var(--color-primary);
             color: white;
             font-weight: bold;
@@ -73,373 +64,405 @@
             transition: background-color 0.3s;
         }
 
-        .auth-screen button:hover {
-            background-color: #156243;
+        #auth-container button:hover {
+            background-color: #00695c;
         }
         
-        .toggle-auth {
-            font-size: 14px;
-            margin-top: 15px;
-            color: var(--color-text);
-        }
-        
-        .toggle-auth span {
+        #auth-container .switch-link {
             color: var(--color-primary);
             cursor: pointer;
-            font-weight: bold;
+            text-decoration: underline;
+            margin-top: 10px;
+            display: block;
         }
 
+        /* Tampilan Chat Room */
+        #chat-container {
+            display: none; /* Sembunyikan saat awal */
+            width: 450px;
+            height: 90vh;
+            max-height: 800px;
+            background-color: var(--color-chat-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
 
-        /* --- UI Chat Room --- */
+        /* Header Chat */
         .chat-header {
             background-color: var(--color-primary);
-            color: var(--color-secondary);
+            color: white;
             padding: 15px;
-            font-weight: bold;
+            text-align: center;
+            font-size: 1.2em;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chat-header i {
+            color: var(--color-secondary); /* Icon emas */
+        }
+        
+        .chat-header button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9em;
+            padding: 5px 10px;
+            border: 1px solid white;
+            border-radius: 5px;
+            transition: background-color 0.3s;
         }
 
-        .chat-window {
+        .chat-header button:hover {
+            background-color: #00a693;
+        }
+
+
+        /* Area Pesan */
+        #messages {
             flex-grow: 1;
             padding: 10px;
             overflow-y: auto;
-            background-color: var(--color-background); /* Background chat */
+            background-color: var(--color-bg);
         }
 
-        .message {
-            display: flex;
-            margin-bottom: 10px;
-        }
-
+        /* Style Pesan */
         .message-bubble {
+            display: flex;
+            margin-bottom: 15px;
+        }
+
+        .message-content {
+            padding: 8px 12px;
+            border-radius: 15px;
             max-width: 75%;
-            padding: 10px 12px;
-            border-radius: 18px;
-            position: relative;
             word-wrap: break-word;
+            position: relative;
             box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
         }
-
-        .message.my-message {
+        
+        .message-meta {
+            font-size: 0.7em;
+            opacity: 0.8;
+            margin-top: 2px;
+            text-align: right;
+        }
+        
+        /* Pesan dari Anda (Sent) */
+        .sent {
             justify-content: flex-end;
         }
 
-        .message.my-message .message-bubble {
-            background-color: var(--color-my-bubble);
-            border-bottom-right-radius: 4px;
+        .sent .message-content {
+            background-color: var(--color-sent-bg);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .sent .message-meta {
+            color: #ccc;
         }
 
-        .message.other-message {
+        /* Pesan dari Orang Lain (Received) */
+        .received {
             justify-content: flex-start;
         }
 
-        .message.other-message .message-bubble {
-            background-color: var(--color-other-bubble);
-            border-bottom-left-radius: 4px;
+        .received .message-content {
+            background-color: var(--color-received-bg);
+            color: #333;
+            border-bottom-left-radius: 5px;
         }
 
-        .message-user {
-            font-size: 11px;
+        .message-sender {
             font-weight: bold;
+            font-size: 0.8em;
+            margin-bottom: 4px;
             color: var(--color-primary);
-            margin-bottom: 2px;
-            display: block;
         }
         
-        .message-text {
-            font-size: 15px;
-            color: var(--color-text);
+        .received .message-sender {
+            color: #333;
         }
 
-        .chat-input {
+
+        /* Input Pesan */
+        .chat-input-area {
             display: flex;
             padding: 10px;
-            border-top: 1px solid #ddd;
             background-color: var(--color-chat-bg);
+            border-top: 1px solid #eee;
         }
 
-        .chat-input input {
+        #message-input {
             flex-grow: 1;
             padding: 10px;
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
             border-radius: 20px;
-            margin-right: 8px;
-            font-size: 16px;
+            margin-right: 10px;
+            font-size: 1em;
         }
 
-        .chat-input button {
+        #send-button {
             background-color: var(--color-primary);
-            color: var(--color-secondary);
+            color: white;
             border: none;
             padding: 10px 15px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 1.2em;
+            transition: background-color 0.3s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .chat-input button:hover {
-            background-color: #156243;
+        #send-button:hover {
+            background-color: #00695c;
+        }
+        
+        /* Icon Tambahan untuk fitur lanjutan */
+        .attachment-icon {
+            margin-right: 10px;
+            font-size: 1.4em;
+            color: var(--color-primary);
+            cursor: pointer;
+            align-self: center;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="authScreen" class="auth-screen">
-        <h2>Selamat Datang di ChatRoom</h2>
-        <form id="authForm">
-            <input type="email" id="email" placeholder="Masukkan Email (digunakan sebagai ID)" required>
-            <input type="text" id="username" placeholder="Masukkan Nama Pengguna" style="display:none;">
-            <input type="password" id="password" placeholder="Masukkan Password" required>
-            <button type="submit" id="authButton">LOGIN</button>
-        </form>
-        <p class="toggle-auth">Belum punya akun? <span id="toggleRegister">Daftar Sekarang</span></p>
-        <p id="authMessage" style="color: red; margin-top: 15px;"></p>
+    <div id="auth-container">
+        <h2><i class="fas fa-lock" style="color:var(--color-secondary);"></i> Selamat Datang</h2>
+        
+        <input type="email" id="email-input" placeholder="Email" required>
+        <input type="password" id="password-input" placeholder="Password" required>
+        
+        <input type="text" id="username-input" placeholder="Nama Anda (Untuk Daftar)" style="display: none;">
+        
+        <button id="auth-button" onclick="handleAuth()">Login</button>
+        
+        <a class="switch-link" onclick="toggleAuthMode()">Belum punya akun? Daftar</a>
+        <p id="auth-error" style="color: red; margin-top: 10px;"></p>
     </div>
 
-    <div id="chatRoom" style="display:none; flex-grow: 1; flex-direction: column;">
+    <div id="chat-container">
         <div class="chat-header">
-            <span>
-                <span style="font-size: 1.2em;">⭐ Ruang Obrolan Tunggal</span>
-                <span id="currentUserDisplay" style="margin-left: 10px; font-size: 0.8em; color: #FFF;"></span>
-            </span>
-            <span id="logoutButton" style="cursor: pointer; font-size: 1.2em;" title="Keluar">🚪</span>
+            <span><i class="fas fa-comments"></i> Room Chat Emas Hijau</span>
+            <span id="current-username"></span>
+            <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
         </div>
 
-        <div id="chatWindow" class="chat-window">
+        <div id="messages">
             </div>
 
-        <div class="chat-input">
-            <input type="text" id="messageInput" placeholder="Ketik pesan..." required>
-            <button id="sendMessageButton" title="Kirim Pesan">➤</button>
+        <div class="chat-input-area">
+            <i class="fas fa-paperclip attachment-icon" onclick="alert('Fitur kirim gambar memerlukan Firebase Storage dan fungsi upload yang lebih kompleks.')"></i>
+            
+            <input type="text" id="message-input" placeholder="Ketik pesan..." onkeypress="if(event.keyCode==13) sendMessage()">
+            <button id="send-button" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
         </div>
     </div>
-</div>
 
-<script>
-    // --- JavaScript untuk Logika Aplikasi ---
+    <script>
+        // GANTI DENGAN KONFIGURASI FIREBASE ANDA SENDIRIconst firebaseConfig = {
+  
+const firebaseConfig = {
+  apiKey: "AIzaSyBaskhaOeRoNdv6SPYyds7e0WOdwu_as1Y",
+  authDomain: "vanznumeroo.firebaseapp.com",
+  databaseURL: "https://vanznumeroo-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "vanznumeroo",
+  storageBucket: "vanznumeroo.firebasestorage.app",
+  messagingSenderId: "960620847893",
+  appId: "1:960620847893:web:6627789af79018d6dbff1c",
+  measurementId: "G-Y34WQDB96X"
+};
 
-    const AUTH_SCREEN = document.getElementById('authScreen');
-    const CHAT_ROOM = document.getElementById('chatRoom');
-    const AUTH_FORM = document.getElementById('authForm');
-    const CHAT_WINDOW = document.getElementById('chatWindow');
-    const MESSAGE_INPUT = document.getElementById('messageInput');
-    const SEND_BUTTON = document.getElementById('sendMessageButton');
-    const LOGOUT_BUTTON = document.getElementById('logoutButton');
-    const TOGGLE_REGISTER = document.getElementById('toggleRegister');
-    const AUTH_BUTTON = document.getElementById('authButton');
-    const USERNAME_INPUT = document.getElementById('username');
-    const AUTH_MESSAGE = document.getElementById('authMessage');
-    const CURRENT_USER_DISPLAY = document.getElementById('currentUserDisplay');
+        // Inisialisasi Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-    let isRegisterMode = false;
+        // Elemen DOM
+        const authContainer = document.getElementById('auth-container');
+        const chatContainer = document.getElementById('chat-container');
+        const usernameInput = document.getElementById('username-input');
+        const authButton = document.getElementById('auth-button');
+        const authError = document.getElementById('auth-error');
+        const messagesEl = document.getElementById('messages');
+        const messageInput = document.getElementById('message-input');
+        const currentUsernameEl = document.getElementById('current-username');
 
-    // --- Data Storage Keys ---
-    const USERS_KEY = 'chatAppUsers';
-    const MESSAGES_KEY = 'chatAppMessages';
-    const CURRENT_USER_KEY = 'chatAppCurrentUser';
+        let isRegisterMode = false;
+        let currentUser;
 
-    // ----------------------------------------------------
-    // FUNGSI UTAMA UNTUK LOGIN/REGISTER & SESI
-    // ----------------------------------------------------
+        // --- 1. FUNGSI OTENTIKASI (LOGIN/DAFTAR) ---
 
-    // Memuat daftar pengguna dari localStorage
-    function getUsers() {
-        const users = localStorage.getItem(USERS_KEY);
-        return users ? JSON.parse(users) : {};
-    }
-
-    // Menyimpan daftar pengguna ke localStorage
-    function saveUsers(users) {
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    }
-
-    // Memuat pesan dari localStorage
-    function getMessages() {
-        const messages = localStorage.getItem(MESSAGES_KEY);
-        // Tambahkan pesan default jika storage kosong
-        if (!messages) {
-             const defaultMessages = [{
-                user: "AdminBot",
-                text: "Selamat datang di ChatRoom satu file! 👋",
-                timestamp: Date.now(),
-                isSimulatedOther: true // Tandai sebagai bukan pesan user saat ini
-            }];
-            localStorage.setItem(MESSAGES_KEY, JSON.stringify(defaultMessages));
-            return defaultMessages;
+        /** Mengganti mode dari Login ke Daftar dan sebaliknya */
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            usernameInput.style.display = isRegisterMode ? 'block' : 'none';
+            authButton.innerText = isRegisterMode ? 'Daftar' : 'Login';
+            document.querySelector('.switch-link').innerText = isRegisterMode 
+                ? 'Sudah punya akun? Login' 
+                : 'Belum punya akun? Daftar';
+            authError.innerText = '';
         }
-        return JSON.parse(messages);
-    }
-    
-    // Menyimpan pesan ke localStorage
-    function saveMessages(messages) {
-        localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages));
-    }
 
-    // Mengubah tampilan antara Login dan Daftar
-    TOGGLE_REGISTER.addEventListener('click', () => {
-        isRegisterMode = !isRegisterMode;
-        USERNAME_INPUT.style.display = isRegisterMode ? 'block' : 'none';
-        AUTH_BUTTON.textContent = isRegisterMode ? 'DAFTAR' : 'LOGIN';
-        TOGGLE_REGISTER.textContent = isRegisterMode ? 'Login Sekarang' : 'Daftar Sekarang';
-        AUTH_MESSAGE.textContent = '';
-        document.querySelector('.auth-screen h2').textContent = isRegisterMode ? 'Daftar Akun Baru' : 'Selamat Datang Kembali';
-    });
+        /** Menangani proses login atau daftar */
+        async function handleAuth() {
+            const email = document.getElementById('email-input').value;
+            const password = document.getElementById('password-input').value;
+            const username = document.getElementById('username-input').value;
+            authError.innerText = '';
 
-    // Handle Submit Form (Login atau Register)
-    AUTH_FORM.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value;
-        const username = document.getElementById('username').value.trim();
-        let users = getUsers();
-        AUTH_MESSAGE.textContent = '';
-
-        if (isRegisterMode) {
-            // --- LOGIKA DAFTAR ---
-            if (users[email]) {
-                AUTH_MESSAGE.textContent = 'Email sudah terdaftar. Silakan login.';
-                return;
-            }
-            if (!username) {
-                AUTH_MESSAGE.textContent = 'Nama Pengguna harus diisi.';
+            if (!email || !password || (isRegisterMode && !username)) {
+                authError.innerText = 'Semua field wajib diisi.';
                 return;
             }
 
-            users[email] = { password: password, username: username };
-            saveUsers(users);
-            
-            // Simpan sesi dan langsung masuk
-            localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({ email, username }));
-            renderChatRoom();
-        } else {
-            // --- LOGIKA LOGIN ---
-            const user = users[email];
-            if (user && user.password === password) {
-                // Login berhasil. Otomatis mendapatkan username dari data user
-                localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({ email, username: user.username }));
-                renderChatRoom();
-            } else {
-                AUTH_MESSAGE.textContent = 'Email atau password salah.';
+            try {
+                if (isRegisterMode) {
+                    // Proses Daftar (Register)
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    // Menyimpan nama pengguna ke Firestore saat Daftar
+                    await db.collection('users').doc(userCredential.user.uid).set({
+                        username: username,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    await userCredential.user.updateProfile({ displayName: username });
+                    alert('Pendaftaran berhasil! Anda sekarang masuk.');
+                } else {
+                    // Proses Login
+                    await auth.signInWithEmailAndPassword(email, password);
+                }
+            } catch (error) {
+                console.error("Kesalahan Otentikasi:", error.code, error.message);
+                authError.innerText = `Kesalahan: ${error.message}`;
             }
         }
-    });
-
-    // ----------------------------------------------------
-    // FUNGSI CHAT ROOM
-    // ----------------------------------------------------
-
-    // Menampilkan pesan-pesan yang tersimpan
-    function renderMessages() {
-        const messages = getMessages();
-        const currentUser = JSON.parse(localStorage.getItem(CURRENT_USER_KEY));
-        CHAT_WINDOW.innerHTML = '';
         
-        messages.forEach(msg => {
-            const messageElement = document.createElement('div');
-            // Tentukan apakah pesan ini dari user saat ini atau user lain
-            const isMyMessage = (msg.user === currentUser.username);
-            
-            // PENTING: Karena ini adalah storage lokal, kita simulasikan 'user lain' 
-            // dengan asumsi pesan yang tidak dibuat oleh user saat ini adalah 'user lain'.
-            // Di server, Anda akan membandingkan ID.
-            
-            messageElement.className = 'message ' + (isMyMessage ? 'my-message' : 'other-message');
+        /** Logout dari Firebase */
+        function logout() {
+            auth.signOut().then(() => {
+                console.log("User berhasil logout.");
+            }).catch((error) => {
+                console.error("Kesalahan saat logout:", error);
+            });
+        }
 
-            const bubble = document.createElement('div');
-            bubble.className = 'message-bubble';
+
+        // --- 2. FUNGSI CHAT ROOM (KIRIM/TERIMA PESAN) ---
+
+        /** Mengirim pesan ke Firestore */
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (text === '' || !currentUser) return;
+
+            db.collection('messages').add({
+                uid: currentUser.uid,
+                username: currentUser.displayName || 'Anonim', // Menggunakan displayName
+                text: text,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                messageInput.value = ''; // Kosongkan input
+                // Fitur: Reply dan Reaction memerlukan update struktur data di sini
+            })
+            .catch(error => {
+                console.error("Kesalahan saat mengirim pesan:", error);
+            });
+        }
+
+        /** Menambahkan pesan ke tampilan UI */
+        function displayMessage(doc) {
+            const data = doc.data();
+            const messageId = doc.id;
+            const isSent = data.uid === currentUser.uid;
             
-            // Tampilkan nama pengirim hanya untuk pesan 'user lain'
-            if (!isMyMessage) {
-                const userSpan = document.createElement('span');
-                userSpan.className = 'message-user';
-                userSpan.textContent = msg.user;
-                bubble.appendChild(userSpan);
+            // Format waktu (sederhana)
+            let timeStr = 'Baru saja';
+            if (data.timestamp) {
+                const date = data.timestamp.toDate();
+                timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             }
+
+            const bubbleClass = isSent ? 'sent' : 'received';
+            const senderName = isSent ? 'Anda' : (data.username || 'Anonim');
             
-            const textSpan = document.createElement('span');
-            textSpan.className = 'message-text';
-            textSpan.textContent = msg.text;
-            bubble.appendChild(textSpan);
+            const messageHtml = `
+                <div class="message-bubble ${bubbleClass}" data-id="${messageId}">
+                    <div class="message-content">
+                        ${!isSent ? `<div class="message-sender">${senderName}</div>` : ''}
+                        <div class="message-text">${data.text}</div>
+                        <div class="message-meta">${timeStr} <i class="fas fa-check"></i></div> 
+                    </div>
+                </div>
+            `;
             
-            messageElement.appendChild(bubble);
-            CHAT_WINDOW.appendChild(messageElement);
+            messagesEl.insertAdjacentHTML('beforeend', messageHtml);
+            // Gulir ke bawah pesan terbaru
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+        
+        /** Mengambil semua pesan dari Firestore (real-time listener) */
+        function listenForMessages() {
+            // Urutkan berdasarkan timestamp, limit 50 pesan terakhir
+            db.collection('messages').orderBy('timestamp', 'asc').limit(50)
+                .onSnapshot(snapshot => {
+                    // Hapus pesan lama dan muat ulang semua pesan (sederhana)
+                    messagesEl.innerHTML = ''; 
+                    snapshot.forEach(doc => {
+                        displayMessage(doc);
+                    });
+                }, error => {
+                    console.error("Kesalahan mendengarkan pesan:", error);
+                });
+        }
+
+        // --- 3. PENGELOLA STATUS OTENTIKASI ---
+
+        /** Listener yang dipanggil ketika status Auth berubah (Login/Logout) */
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // User sudah login
+                currentUser = user;
+                
+                // Gunakan nama tampilan dari otentikasi
+                const displayName = user.displayName || 'Pengguna';
+                currentUsernameEl.innerText = `Masuk sebagai: ${displayName}`;
+
+                // Tampilkan Chat, Sembunyikan Auth
+                authContainer.style.display = 'none';
+                chatContainer.style.display = 'flex';
+                
+                listenForMessages(); // Mulai mendengarkan pesan
+                
+                console.log("User Logged In:", displayName);
+
+            } else {
+                // User logout
+                currentUser = null;
+
+                // Tampilkan Auth, Sembunyikan Chat
+                chatContainer.style.display = 'none';
+                authContainer.style.display = 'block';
+                
+                console.log("User Logged Out.");
+                messagesEl.innerHTML = ''; // Hapus pesan lama
+            }
         });
 
-        // Gulir ke bawah
-        CHAT_WINDOW.scrollTop = CHAT_WINDOW.scrollHeight;
-    }
-
-    // Mengirim pesan baru
-    SEND_BUTTON.addEventListener('click', sendMessage);
-    MESSAGE_INPUT.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            sendMessage();
-        }
-    });
-
-    function sendMessage() {
-        const text = MESSAGE_INPUT.value.trim();
-        if (text === '') return;
-
-        const currentUser = JSON.parse(localStorage.getItem(CURRENT_USER_KEY));
-        
-        const newMessage = {
-            user: currentUser.username,
-            text: text,
-            timestamp: Date.now()
-        };
-
-        // 1. Ambil, Tambah, dan Simpan
-        const messages = getMessages();
-        messages.push(newMessage);
-        saveMessages(messages);
-
-        // 2. Render ulang dan bersihkan input
-        renderMessages();
-        MESSAGE_INPUT.value = '';
-    }
-
-    // Logika Logout
-    LOGOUT_BUTTON.addEventListener('click', () => {
-        localStorage.removeItem(CURRENT_USER_KEY);
-        // Sembunyikan chat, tampilkan auth
-        CHAT_ROOM.style.display = 'none';
-        AUTH_SCREEN.style.display = 'flex';
-        AUTH_MESSAGE.textContent = 'Anda telah keluar. Silakan login kembali.';
-    });
-
-
-    // ----------------------------------------------------
-    // INITIALISASI
-    // ----------------------------------------------------
-
-    function renderChatRoom() {
-        const currentUserData = localStorage.getItem(CURRENT_USER_KEY);
-        
-        if (currentUserData) {
-            // Sesi ditemukan: Tampilkan Chat Room
-            const currentUser = JSON.parse(currentUserData);
-            AUTH_SCREEN.style.display = 'none';
-            CHAT_ROOM.style.display = 'flex';
-            CURRENT_USER_DISPLAY.textContent = `(${currentUser.username})`;
-            
-            // Muat dan tampilkan pesan
-            renderMessages();
-        } else {
-            // Sesi tidak ditemukan: Tampilkan Login/Register
-            CHAT_ROOM.style.display = 'none';
-            AUTH_SCREEN.style.display = 'flex';
-        }
-    }
-
-    // Jalankan pengecekan sesi saat halaman dimuat
-    renderChatRoom();
-
-</script>
+    </script>
 </body>
 </html>
